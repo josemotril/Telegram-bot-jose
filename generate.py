@@ -1,6 +1,5 @@
 import random
 import os
-import requests
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 from datetime import datetime
@@ -8,33 +7,28 @@ from datetime import datetime
 W, H = 1080, 1920
 
 temas = [
-    ("RECETA",
-     "Gazpacho express: tomate maduro + AOVE + sal",
-     "Quick gazpacho: ripe tomato + EVOO + salt",
-     "tomato food kitchen cooking"),
-
-    ("TIP",
-     "Afila el cuchillo cada semana para cortes limpios",
-     "Sharpen your knife weekly for clean cuts",
-     "chef knife kitchen professional"),
-
-    ("CURIOSIDAD",
-     "El aceite temprano aporta más antioxidantes",
-     "Early harvest olive oil has more antioxidants",
-     "olive oil mediterranean food"),
-
-    ("FRASE",
-     "La cocina es pasión, técnica y constancia",
-     "Cooking is passion, technique and consistency",
-     "modern kitchen minimal background"),
+    ("RECETA", "Gazpacho express: tomate maduro + AOVE + sal", "Quick gazpacho: ripe tomato + EVOO + salt"),
+    ("TIP", "Afila el cuchillo cada semana para cortes limpios", "Sharpen your knife weekly for clean cuts"),
+    ("CURIOSIDAD", "El aceite temprano aporta más antioxidantes", "Early harvest olive oil has more antioxidants"),
+    ("FRASE", "La cocina es pasión, técnica y constancia", "Cooking is passion, technique and consistency"),
 ]
 
-def descargar_imagen(query):
-    url = f"https://source.unsplash.com/1080x1920/?{query}"
-    img_data = requests.get(url, timeout=20).content
-    with open("temp.jpg", "wb") as f:
-        f.write(img_data)
-    return Image.open("temp.jpg").convert("RGB")
+fondos = [
+    ((245, 87, 87), (255, 195, 113)),
+    ((67, 206, 162), (24, 90, 157)),
+    ((255, 154, 158), (250, 208, 196)),
+    ((141, 153, 174), (237, 242, 244)),
+]
+
+def degradado(c1, c2):
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        r = int(c1[0] + (c2[0]-c1[0]) * y/H)
+        g = int(c1[1] + (c2[1]-c1[1]) * y/H)
+        b = int(c1[2] + (c2[2]-c1[2]) * y/H)
+        draw.line((0,y,W,y), fill=(r,g,b))
+    return img
 
 def multiline(draw, text, font, y):
     lines = textwrap.fill(text, width=24)
@@ -46,18 +40,16 @@ def multiline(draw, text, font, y):
 
 os.makedirs("stories", exist_ok=True)
 
-for i in range(3):  # 🔥 3 historias
-    categoria, es, en, query = random.choice(temas)
+for i in range(3):  # 🔥 3 historias por ejecución
+    categoria, es, en = random.choice(temas)
 
-    img = descargar_imagen(query)
-    overlay = Image.new("RGBA", img.size, (0,0,0,120))
-    img = Image.alpha_composite(img.convert("RGBA"), overlay)
-
+    c1, c2 = random.choice(fondos)
+    img = degradado(c1, c2)
     draw = ImageDraw.Draw(img)
 
-    font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 90)
-    font_main = ImageFont.truetype("DejaVuSans-Bold.ttf", 65)
-    font_small = ImageFont.truetype("DejaVuSans.ttf", 45)
+    font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 95)
+    font_main = ImageFont.truetype("DejaVuSans-Bold.ttf", 70)
+    font_small = ImageFont.truetype("DejaVuSans.ttf", 50)
 
     y = 300
     y = multiline(draw, categoria, font_big, y)
@@ -67,7 +59,6 @@ for i in range(3):  # 🔥 3 historias
     draw.text((W/2, H-120), "@JoseMotril", font=font_small, anchor="mm", fill="white")
 
     filename = f"stories/story_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}.png"
-    img.convert("RGB").save(filename)
+    img.save(filename)
 
-print("3 historias creadas")
-
+print("3 historias creadas correctamente")
