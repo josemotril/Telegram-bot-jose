@@ -46,7 +46,7 @@ def multiline(draw, text, font, y):
 
 os.makedirs("stories", exist_ok=True)
 
-for i in range(3):   # 🔥 genera 3 historias cada vez
+for i in range(3):  # 🔥 3 historias
     categoria, es, en, query = random.choice(temas)
 
     img = descargar_imagen(query)
@@ -62,5 +62,12 @@ for i in range(3):   # 🔥 genera 3 historias cada vez
     y = 300
     y = multiline(draw, categoria, font_big, y)
     y = multiline(draw, es, font_main, y)
-    y = multiline(draw, en, font_small, y)_
+    y = multiline(draw, en, font_small, y)
+
+    draw.text((W/2, H-120), "@JoseMotril", font=font_small, anchor="mm", fill="white")
+
+    filename = f"stories/story_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}.png"
+    img.convert("RGB").save(filename)
+
+print("3 historias creadas")
 
