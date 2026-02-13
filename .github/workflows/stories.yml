@@ -1,10 +1,10 @@
-name: Generar historias Instagram
+name: Historias IA PRO
 
 on:
   schedule:
-    - cron: '0 6 * * *'    # 07:00 España invierno
-    - cron: '0 14 * * *'   # 15:00
-    - cron: '0 19 * * *'   # 20:00
+    - cron: '0 6 * * *'
+    - cron: '0 14 * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
 
 jobs:
@@ -21,16 +21,21 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Instalar dependencias
-        run: pip install pillow
+      - run: pip install pillow requests openai
 
-      - name: Generar historias
-        run: python generate.py
+      - run: python generate.py
 
-      - name: Guardar imágenes en el repo
-        run: |
+      - run: |
           git config user.name "bot"
           git config user.email "bot@github.com"
           git add stories/*
-          git commit -m "Nuevas historias automáticas" || echo "No changes"
+          git commit -m "Historias IA"
           git push
+
+      - name: Enviar a Telegram
+        run: |
+          for f in stories/*.png; do
+            curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendPhoto \
+            -F chat_id=${{ secrets.CHAT_ID }} \
+            -F photo=@"$f"
+          done
