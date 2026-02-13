@@ -1,8 +1,8 @@
 import os
 import base64
+import random
 from io import BytesIO
 from datetime import datetime
-import random
 
 from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
@@ -12,23 +12,27 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 W, H = 1080, 1920
 os.makedirs("stories", exist_ok=True)
 
-
+# 🔥 Contenido más elaborado
 contenidos = [
-    ("Gazpacho andaluz tradicional con AOVE temprano y tomate maduro. Sabor fresco y natural.",
-     "Traditional Andalusian gazpacho with early harvest olive oil."),
-
-    ("Tip profesional: afila cuchillos cada semana. Cortes limpios mejoran textura y sabor.",
-     "Pro tip: sharpen knives weekly for cleaner cuts."),
-
-    ("Curiosidad: el tratamiento HPP conserva nutrientes sin usar calor ni conservantes.",
-     "Fun fact: HPP preserves nutrients without heat."),
-
-    ("Cocinar es pasión, técnica y respeto por el producto. Menos es más.",
-     "Cooking is passion, technique and respect for ingredients.")
+    (
+        "Gazpacho andaluz tradicional\n\nTomate pera maduro, AOVE temprano y vinagre suave.\nTextura sedosa y frescura natural.",
+        "Traditional Andalusian gazpacho\nRipe tomatoes, early harvest olive oil and smooth vinegar."
+    ),
+    (
+        "Técnica profesional en cocina\n\nAfila tus cuchillos cada semana.\nCortes limpios mejoran textura y precisión.",
+        "Professional kitchen tip\nSharpen knives weekly for cleaner and more precise cuts."
+    ),
+    (
+        "Curiosidad gastronómica\n\nEl tratamiento HPP conserva nutrientes sin aplicar calor.\nMayor vida útil, mismo sabor.",
+        "Gastronomy fact\nHPP preserves nutrients without heat."
+    ),
+    (
+        "Cocinar es equilibrio\n\nProducto, técnica y respeto.\nMenos ingredientes, más intención.",
+        "Cooking is balance\nIngredients, technique and respect."
+    )
 ]
 
-
-# 🔥 GENERAR IMAGEN IA (BASE64 NUEVO FORMATO)
+# 🔥 Generar imagen IA
 def generar_imagen(prompt):
     result = client.images.generate(
         model="gpt-image-1",
@@ -43,38 +47,72 @@ def generar_imagen(prompt):
     return img.resize((W, H))
 
 
+# 🔥 Overlay profesional estilo editorial
 def overlay_text(img, es, en):
     img = img.convert("RGBA")
-
-    overlay = Image.new("RGBA", img.size, (0, 0, 0, 120))
-    img = Image.alpha_composite(img, overlay)
-
     draw = ImageDraw.Draw(img)
 
-    font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 65)
-    font_small = ImageFont.truetype("DejaVuSans.ttf", 45)
+    # Degradado elegante inferior
+    gradient = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    grad_draw = ImageDraw.Draw(gradient)
 
-    y = 1200
+    for y in range(H):
+        alpha = int(220 * (y / H))
+        grad_draw.line((0, y, W, y), fill=(0, 0, 0, alpha))
 
-    draw.multiline_text((80, y), es, font=font_big, fill="white")
-    draw.multiline_text((80, y + 200), en, font=font_small, fill="white")
-    draw.text((W - 250, H - 120), "@JoseMotril", font=font_small, fill="white")
+    img = Image.alpha_composite(img, gradient)
+    draw = ImageDraw.Draw(img)
+
+    # Tipografías
+    font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 74)
+    font_body = ImageFont.truetype("DejaVuSans.ttf", 44)
+    font_brand = ImageFont.truetype("DejaVuSans.ttf", 38)
+
+    margin = 90
+    y_start = int(H * 0.60)
+
+    # Texto español (principal)
+    draw.multiline_text(
+        (margin, y_start),
+        es,
+        font=font_title,
+        fill="white",
+        spacing=10
+    )
+
+    # Texto inglés (subtítulo)
+    draw.multiline_text(
+        (margin, y_start + 280),
+        en,
+        font=font_body,
+        fill=(230, 230, 230),
+        spacing=6
+    )
+
+    # Firma
+    draw.text(
+        (margin, H - 110),
+        "@JoseMotril",
+        font=font_brand,
+        fill=(220, 220, 220)
+    )
 
     return img.convert("RGB")
 
 
+# 🔥 Generar 3 historias diferentes
 for i in range(3):
     es, en = random.choice(contenidos)
 
     prompt = """
     professional food photography,
     mediterranean cuisine,
-    natural light,
+    natural window light,
+    cinematic composition,
     editorial magazine style,
     realistic textures,
-    instagram story composition,
-    high quality,
-    elegant
+    instagram story format,
+    elegant, modern, premium
     """
 
     img = generar_imagen(prompt)
@@ -83,5 +121,5 @@ for i in range(3):
     filename = f"stories/story_{datetime.now().strftime('%H%M%S')}_{i}.png"
     img.save(filename)
 
-
 print("Historias generadas correctamente")
+
