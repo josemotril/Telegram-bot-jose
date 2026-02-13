@@ -103,7 +103,3 @@ for i in range(3):
     img.save(nombre)
 
 print("Historias creadas")
-
-    img.save(nombre)
-
-print("OK")
