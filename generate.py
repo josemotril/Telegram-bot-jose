@@ -5,101 +5,96 @@ import textwrap
 from datetime import datetime
 
 W, H = 1080, 1920
+os.makedirs("stories", exist_ok=True)
 
 recetas = [
-    ("Gazpacho express con tomate pera y AOVE", "Quick gazpacho with plum tomato and EVOO"),
-    ("Salmorejo cremoso con pan del día anterior", "Creamy salmorejo with day-old bread"),
-    ("Guacamole casero con lima y cilantro", "Homemade guacamole with lime and cilantro"),
-    ("Tomate rallado con aceite temprano y sal marina", "Grated tomato with early olive oil and sea salt"),
+    ("Gazpacho andaluz cremoso con AOVE", "Creamy Andalusian gazpacho with EVOO"),
+    ("Salmorejo tradicional en 5 minutos", "Traditional salmorejo in 5 minutes"),
 ]
 
 tips = [
     ("Afila el cuchillo cada semana", "Sharpen your knife weekly"),
-    ("Enfría rápido las cremas para mantener color", "Cool soups quickly to keep color"),
     ("Añade el aceite al final para más aroma", "Add oil at the end for more aroma"),
-    ("Sala siempre al final para controlar sabor", "Salt at the end to control flavor"),
-]
-
-curiosidades = [
-    ("El HPP conserva sabor sin calor", "HPP preserves flavor without heat"),
-    ("El tomate maduro tiene más umami", "Ripe tomatoes contain more umami"),
-    ("El AOVE protege antioxidantes naturales", "EVOO protects natural antioxidants"),
 ]
 
 frases = [
-    ("Cocinar es cuidar a los demás", "Cooking is caring for others"),
     ("La cocina es pasión diaria", "Cooking is daily passion"),
     ("Menos ingredientes, más calidad", "Less ingredients, more quality"),
 ]
 
-fondos = [
-    ((245, 87, 87), (255, 195, 113)),
-    ((67, 206, 162), (24, 90, 157)),
-    ((255, 154, 158), (250, 208, 196)),
-    ((141, 153, 174), (237, 242, 244)),
-    ((255, 126, 95), (254, 180, 123)),
-]
 
-
-def degradado(c1, c2):
-    img = Image.new("RGB", (W, H))
-    draw = ImageDraw.Draw(img)
-
-    for y in range(H):
-        r = int(c1[0] + (c2[0]-c1[0]) * y/H)
-        g = int(c1[1] + (c2[1]-c1[1]) * y/H)
-        b = int(c1[2] + (c2[2]-c1[2]) * y/H)
-        draw.line((0, y, W, y), fill=(r, g, b))
-
-    return img
-
-
-def escribir(draw, texto, font, y):
-    texto = textwrap.fill(texto, width=24)
-    bbox = draw.multiline_textbbox((0,0), texto, font=font)
+def center(draw, text, font, y, color="white"):
+    text = textwrap.fill(text, width=22)
+    bbox = draw.multiline_textbbox((0,0), text, font=font)
     w = bbox[2]-bbox[0]
     h = bbox[3]-bbox[1]
-    draw.multiline_text(((W-w)/2, y), texto, font=font, fill="white", align="center")
-    return y + h + 50
+    draw.multiline_text(((W-w)/2, y), text, font=font, fill=color, align="center")
+    return y + h
 
 
-def generar_contenido():
-    tipo = random.choice(["RECETA", "TIP", "CURIOSIDAD", "FRASE"])
-
-    if tipo == "RECETA":
-        es, en = random.choice(recetas)
-    elif tipo == "TIP":
-        es, en = random.choice(tips)
-    elif tipo == "CURIOSIDAD":
-        es, en = random.choice(curiosidades)
-    else:
-        es, en = random.choice(frases)
-
-    return tipo, es, en
+font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 95)
+font_mid = ImageFont.truetype("DejaVuSans-Bold.ttf", 65)
+font_small = ImageFont.truetype("DejaVuSans.ttf", 45)
 
 
-os.makedirs("stories", exist_ok=True)
+# =========================
+# ESTILO 1 → RECETA EDITORIAL
+# =========================
+img = Image.new("RGB", (W,H), (245,242,235))
+draw = ImageDraw.Draw(img)
 
-for i in range(3):
+draw.rectangle((80, 300, W-80, 1200), fill=(255,255,255))
 
-    categoria, es, en = generar_contenido()
-    c1, c2 = random.choice(fondos)
+es, en = random.choice(recetas)
 
-    img = degradado(c1, c2)
-    draw = ImageDraw.Draw(img)
+y = 350
+y = center(draw, "RECETA", font_small, y, "black") + 40
+y = center(draw, es, font_mid, y, "black") + 40
+center(draw, en, font_small, y, "gray")
 
-    font_big = ImageFont.truetype("DejaVuSans-Bold.ttf", 95)
-    font_mid = ImageFont.truetype("DejaVuSans-Bold.ttf", 65)
-    font_small = ImageFont.truetype("DejaVuSans.ttf", 45)
+draw.text((W/2, H-140), "@JoseMotril", font=font_small, anchor="mm", fill="gray")
+img.save(f"stories/story_{datetime.now().strftime('%H%M%S')}_0.png")
 
-    y = 300
-    y = escribir(draw, categoria, font_big, y)
-    y = escribir(draw, es, font_mid, y)
-    y = escribir(draw, en, font_small, y)
 
-    draw.text((W/2, H-130), "@JoseMotril", font=font_small, anchor="mm", fill="white")
+# =========================
+# ESTILO 2 → TIP MINIMAL
+# =========================
+img = Image.new("RGB", (W,H), (30,30,30))
+draw = ImageDraw.Draw(img)
 
-    nombre = f"stories/story_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}.png"
-    img.save(nombre)
+es, en = random.choice(tips)
 
-print("Historias creadas")
+draw.rectangle((0, 900, W, 1200), fill=(255,255,255))
+
+center(draw, "TIP PRO", font_small, 200, "white")
+center(draw, es, font_big, 450, "white")
+center(draw, en, font_small, 950, "black")
+
+draw.text((W/2, H-140), "@JoseMotril", font=font_small, anchor="mm", fill="white")
+img.save(f"stories/story_{datetime.now().strftime('%H%M%S')}_1.png")
+
+
+# =========================
+# ESTILO 3 → FRASE IMPACTO
+# =========================
+c1 = (255,126,95)
+c2 = (254,180,123)
+
+img = Image.new("RGB", (W,H))
+draw = ImageDraw.Draw(img)
+
+for y in range(H):
+    r = int(c1[0] + (c2[0]-c1[0]) * y/H)
+    g = int(c1[1] + (c2[1]-c1[1]) * y/H)
+    b = int(c1[2] + (c2[2]-c1[2]) * y/H)
+    draw.line((0,y,W,y), fill=(r,g,b))
+
+es, en = random.choice(frases)
+
+center(draw, es.upper(), font_big, 700)
+center(draw, en, font_small, 1000)
+
+draw.text((W/2, H-140), "@JoseMotril", font=font_small, anchor="mm", fill="white")
+img.save(f"stories/story_{datetime.now().strftime('%H%M%S')}_2.png")
+
+print("3 historias PRO creadas")
