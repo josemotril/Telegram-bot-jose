@@ -18,15 +18,18 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install openai pillow
+      - name: Instalar dependencias
+        run: pip install openai pillow requests
 
-      - run: python generate.py
+      - name: Generar imágenes
+        run: python generate.py
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - run: |
-          git config user.name "bot"
-          git config user.email "bot@github.com"
-          git add output/*
-          git commit -m "Historias automáticas"
-          git push
+      - name: Enviar email Outlook
+        run: python send_mail.py
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+
