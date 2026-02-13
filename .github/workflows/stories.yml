@@ -2,9 +2,9 @@ name: Generar historias Instagram
 
 on:
   schedule:
-    - cron: '0 6 * * *'
-    - cron: '0 14 * * *'
-    - cron: '0 19 * * *'
+    - cron: '0 6 * * *'    # 07:00 España invierno
+    - cron: '0 14 * * *'   # 15:00
+    - cron: '0 19 * * *'   # 20:00
   workflow_dispatch:
 
 jobs:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write   # 🔥 MUY IMPORTANTE para poder hacer push
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -21,17 +21,16 @@ jobs:
         with:
           python-version: "3.11"
 
-      # ✅ instalar dependencias necesarias
-      - run: pip install pillow requests
+      - name: Instalar dependencias
+        run: pip install pillow
 
-      # ✅ generar 3 historias
-      - run: python generate.py
+      - name: Generar historias
+        run: python generate.py
 
-      # ✅ guardar automáticamente
-      - run: |
+      - name: Guardar imágenes en el repo
+        run: |
           git config user.name "bot"
           git config user.email "bot@github.com"
           git add stories/*
           git commit -m "Nuevas historias automáticas" || echo "No changes"
           git push
-
