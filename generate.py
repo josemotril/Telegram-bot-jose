@@ -29,9 +29,12 @@ except:
 
 def multiline(text, font, y):
     lines = textwrap.fill(text, width=22)
-    w, h = draw.multiline_textsize(lines, font=font)
-    draw.multiline_text(((W-w)/2, y), lines, font=font, fill=(20,20,20), align="center")
+    bbox = draw.multiline_textbbox((0, 0), lines, font=font)
+    w = bbox[2] - bbox[0]
+    h = bbox[3] - bbox[1]
+    draw.multiline_text(((W - w) / 2, y), lines, font=font, fill=(20,20,20), align="center")
     return y + h + 40
+
 
 y = 250
 y = multiline(categoria, font_big, y)
