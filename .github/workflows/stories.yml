@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write   # 🔥 MUY IMPORTANTE para poder hacer push
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +21,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install pillow
+      # ✅ instalar dependencias necesarias
+      - run: pip install pillow requests
 
+      # ✅ generar 3 historias
       - run: python generate.py
 
+      # ✅ guardar automáticamente
       - run: |
           git config user.name "bot"
           git config user.email "bot@github.com"
           git add stories/*
-          git commit -m "Nueva historia automática"
+          git commit -m "Nuevas historias automáticas" || echo "No changes"
           git push
+
