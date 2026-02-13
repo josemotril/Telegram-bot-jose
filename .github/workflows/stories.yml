@@ -2,9 +2,9 @@ name: Historias IA PRO
 
 on:
   schedule:
-    - cron: '0 6 * * *'
-    - cron: '0 14 * * *'
-    - cron: '0 19 * * *'
+    - cron: '0 6 * * *'    # 07:00
+    - cron: '0 14 * * *'   # 15:00
+    - cron: '0 19 * * *'   # 20:00
   workflow_dispatch:
 
 jobs:
@@ -21,21 +21,30 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: pip install pillow requests openai
+      - name: Instalar dependencias
+        run: pip install pillow requests openai
 
-      - run: python generate.py
+      # 🔥 AQUÍ PASAMOS LOS SECRETS AL SCRIPT
+      - name: Generar historias IA
+        run: python generate.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - run: |
+      - name: Guardar imágenes en repo
+        run: |
           git config user.name "bot"
           git config user.email "bot@github.com"
           git add stories/*
-          git commit -m "Historias IA"
+          git commit -m "Historias IA automáticas" || echo "No changes"
           git push
 
       - name: Enviar a Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           for f in stories/*.png; do
-            curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendPhoto \
-            -F chat_id=${{ secrets.CHAT_ID }} \
+            curl -s -X POST https://api.telegram.org/bot$TELEGRAM_TOKEN/sendPhoto \
+            -F chat_id=$CHAT_ID \
             -F photo=@"$f"
           done
