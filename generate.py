@@ -1,6 +1,5 @@
 import os
 import base64
-import random
 from io import BytesIO
 from datetime import datetime
 
@@ -13,92 +12,96 @@ W, H = 1080, 1920
 os.makedirs("stories", exist_ok=True)
 
 
-# 🔥 1. GPT genera el contenido del día
+# 🔥 GPT genera contenido completo (story + post)
 def generar_contenido():
+
     prompt = """
-    Crea contenido para una historia de Instagram gastronómica profesional.
+    Crea contenido profesional para Instagram gastronómico.
 
-    Devuelve en este formato exacto:
+    Devuelve EXACTAMENTE:
 
-    TITULO: ...
-    TEXTO_ES: ...
-    TEXTO_EN: ...
-    PROMPT_IMAGEN: ...
-
-    El contenido debe ser profesional, elegante, útil y realista.
-    Puede ser receta, técnica, curiosidad gastronómica o reflexión de chef.
+    TITULO: frase corta potente (máx 4 palabras)
+    FRASE: frase corta inspiradora (máx 12 palabras)
+    POST: texto largo explicativo de 4-6 líneas
+    PROMPT_IMAGEN: descripción visual muy concreta de la foto
     """
 
-    response = client.chat.completions.create(
+    r = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.9
     )
 
-    texto = response.choices[0].message.content
+    data = {}
+    for l in r.choices[0].message.content.split("\n"):
+        if ":" in l:
+            k, v = l.split(":", 1)
+            data[k.strip()] = v.strip()
 
-    partes = {}
-    for linea in texto.split("\n"):
-        if ":" in linea:
-            clave, valor = linea.split(":", 1)
-            partes[clave.strip()] = valor.strip()
-
-    return partes
+    return data
 
 
-# 🔥 2. Generar imagen coherente con prompt IA
-def generar_imagen(prompt_imagen):
-    result = client.images.generate(
+def generar_imagen(prompt):
+    r = client.images.generate(
         model="gpt-image-1",
-        prompt=prompt_imagen,
+        prompt=prompt,
         size="1024x1536"
     )
 
-    img_bytes = base64.b64decode(result.data[0].b64_json)
-    img = Image.open(BytesIO(img_bytes)).convert("RGB")
-
-    return img.resize((W, H))
+    img_bytes = base64.b64decode(r.data[0].b64_json)
+    return Image.open(BytesIO(img_bytes)).convert("RGB").resize((W, H))
 
 
-# 🔥 3. Overlay profesional
-def overlay_text(img, titulo, es, en):
+# 🔥 Story minimalista centrada
+def overlay_text(img, titulo, frase):
+
     img = img.convert("RGBA")
+    draw = ImageDraw.Draw(img)
 
-    box = Image.new("RGBA", (W, 600), (0, 0, 0, 190))
-    img.paste(box, (0, H - 600), box)
+    # degradado suave
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 120))
+    img = Image.alpha_composite(img, overlay)
 
     draw = ImageDraw.Draw(img)
 
-    font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 80)
-    font_body = ImageFont.truetype("DejaVuSans.ttf", 48)
-    font_small = ImageFont.truetype("DejaVuSans.ttf", 38)
+    font_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 110)
+    font_sub = ImageFont.truetype("DejaVuSans.ttf", 55)
+    font_brand = ImageFont.truetype("DejaVuSans.ttf", 36)
 
-    margin = 90
-    y = H - 520
+    # 🔥 centrado REAL
+    def center(text, font, y):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        w = bbox[2] - bbox[0]
+        x = (W - w) // 2
+        draw.text((x, y), text, font=font, fill="white")
 
-    draw.text((margin, y), titulo, font=font_title, fill="white")
-    draw.multiline_text((margin, y + 120), es, font=font_body, fill="white", spacing=8)
-    draw.multiline_text((margin, y + 280), en, font=font_small, fill=(210, 210, 210), spacing=6)
+    center(titulo, font_title, H//2 - 150)
+    center(frase, font_sub, H//2 + 10)
 
-    draw.text((margin, H - 80), "@JoseMotril", font=font_small, fill=(200, 200, 200))
+    draw.text((50, H-80), "@JoseMotril", font=font_brand, fill="white")
 
     return img.convert("RGB")
 
 
-# 🔥 Generar 3 historias diferentes cada vez
+# 🔥 Generar 3 stories
 for i in range(3):
 
-    contenido = generar_contenido()
+    c = generar_contenido()
 
-    titulo = contenido.get("TITULO", "Gastronomía")
-    texto_es = contenido.get("TEXTO_ES", "")
-    texto_en = contenido.get("TEXTO_EN", "")
-    prompt_imagen = contenido.get("PROMPT_IMAGEN", "professional food photography")
+    titulo = c["TITULO"]
+    frase = c["FRASE"]
+    post = c["POST"]
+    prompt_img = c["PROMPT_IMAGEN"]
 
-    img = generar_imagen(prompt_imagen)
-    img = overlay_text(img, titulo, texto_es, texto_en)
+    img = generar_imagen(prompt_img)
+    img = overlay_text(img, titulo, frase)
 
-    filename = f"stories/story_{datetime.now().strftime('%H%M%S')}_{i}.png"
-    img.save(filename)
+    ts = datetime.now().strftime("%H%M%S")
 
-print("Historias dinámicas generadas correctamente")
+    img.save(f"stories/story_{ts}_{i}.png")
+
+    # 🔥 guardar texto largo para post
+    with open(f"stories/post_{ts}_{i}.txt", "w", encoding="utf-8") as f:
+        f.write(post)
+
+print("Stories + captions generados")
