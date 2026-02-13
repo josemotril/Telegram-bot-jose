@@ -8,9 +8,9 @@ from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
 
 
-# =========================
-# CONFIG PRO
-# =========================
+# ======================================
+# CONFIG GLOBAL
+# ======================================
 
 W, H = 1024, 1536
 SAFE_MARGIN = 120
@@ -20,38 +20,38 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 os.makedirs("stories", exist_ok=True)
 
 
-# =========================
-# GPT CONTENIDO PREMIUM
-# =========================
+# ======================================
+# GPT → CONTENIDO PROFESIONAL
+# ======================================
 
 def generar_contenido():
 
     prompt = """
 Devuelve SOLO JSON válido.
 
-Genera 3 historias gastronómicas estilo profesional Instagram.
+Genera 3 historias gastronómicas premium estilo Instagram profesional.
 
-Formato:
+Formato EXACTO:
 
 {
- "historias": [
+ "historias":[
    {
-     "titulo": "4 palabras máximo",
-     "frase": "frase inspiradora breve",
-     "post": "texto profesional educativo 5-7 líneas",
-     "prompt_imagen": "fotografía gastronómica realista, luz natural, estilo editorial, plato descrito"
+     "titulo":"máx 4 palabras",
+     "frase":"frase corta inspiradora",
+     "post":"texto profesional gastronómico 5-7 líneas útil y educativo",
+     "prompt_imagen":"descripción fotográfica realista del plato relacionado con el texto"
    }
  ]
 }
 
-Tipos:
+Tipos variados:
+- receta
 - técnica culinaria
-- receta premium
 - curiosidad gastronómica
 - chef tip
+- cultura foodie
 
-Tono:
-moderno, elegante, foodie, profesional.
+Tono: elegante, moderno, profesional, revista gastronómica.
 """
 
     r = client.chat.completions.create(
@@ -63,107 +63,118 @@ moderno, elegante, foodie, profesional.
     return json.loads(r.choices[0].message.content)["historias"]
 
 
-# =========================
-# IMAGEN IA
-# =========================
+# ======================================
+# IA → IMAGEN REALISTA
+# ======================================
 
 def generar_imagen(prompt):
 
     result = client.images.generate(
         model="gpt-image-1",
-        prompt=prompt,
+        prompt=prompt + ", fotografía gastronómica profesional, luz natural, fondo limpio, estilo editorial",
         size="1024x1536"
     )
 
-    img_b64 = result.data[0].b64_json
-    img_bytes = base64.b64decode(img_b64)
+    img_bytes = base64.b64decode(result.data[0].b64_json)
 
     return Image.open(BytesIO(img_bytes)).convert("RGBA")
 
 
-# =========================
-# DISEÑO PREMIUM
-# =========================
-
-def add_gradient(img):
-
-    gradient = Image.new("L", (1, H), 0)
-
-    for y in range(H):
-        value = int(255 * (y / H))
-        gradient.putpixel((0, y), value)
-
-    alpha = gradient.resize(img.size)
-    black = Image.new("RGBA", img.size, (0, 0, 0, 190))
-
-    img = Image.composite(black, img, alpha)
-
-    return img
-
-
-def draw_centered(draw, text, font, y):
-
-    bbox = draw.multiline_textbbox((0, 0), text, font=font, align="center")
-
-    w = bbox[2] - bbox[0]
-
-    x = (W - w) // 2
-
-    draw.multiline_text((x, y), text, font=font, fill="white", align="center")
-
+# ======================================
+# DISEÑO EDITORIAL PREMIUM
+# ======================================
 
 def story_layout(img, titulo, frase):
 
-    img = add_gradient(img)
+    img = img.resize((W, H))
+
+    # overlay oscuro elegante inferior
+    overlay = Image.new("RGBA", img.size, (0,0,0,0))
+    draw_overlay = ImageDraw.Draw(overlay)
+
+    box_h = 520
+    y_box = H - box_h
+
+    draw_overlay.rectangle(
+        [(0, y_box), (W, H)],
+        fill=(0, 0, 0, 200)
+    )
+
+    img = Image.alpha_composite(img, overlay)
 
     draw = ImageDraw.Draw(img)
 
     try:
         title_font = ImageFont.truetype("DejaVuSans-Bold.ttf", 80)
-        sub_font = ImageFont.truetype("DejaVuSans.ttf", 48)
-        brand_font = ImageFont.truetype("DejaVuSans.ttf", 32)
+        sub_font = ImageFont.truetype("DejaVuSans.ttf", 46)
+        brand_font = ImageFont.truetype("DejaVuSans.ttf", 30)
     except:
         title_font = ImageFont.load_default()
         sub_font = ImageFont.load_default()
         brand_font = ImageFont.load_default()
 
-    y_start = H * 0.60
 
-    draw_centered(draw, titulo.upper(), title_font, y_start)
-    draw_centered(draw, frase, sub_font, y_start + 120)
+    # ---------- CENTRADO PERFECTO ----------
+    def centered(text, font, y):
 
+        bbox = draw.textbbox((0,0), text, font=font)
+        w = bbox[2] - bbox[0]
+        x = (W - w) // 2
+
+        draw.text((x, y), text, font=font, fill="white")
+
+
+    y = y_box + 90
+
+    centered(titulo.upper(), title_font, y)
+    centered(frase, sub_font, y + 130)
+
+    # línea fina decorativa
+    draw.line(
+        (W*0.2, y+200, W*0.8, y+200),
+        fill="white",
+        width=2
+    )
+
+    # marca
     draw.text(
-        (SAFE_MARGIN, H - 80),
+        (SAFE_MARGIN, H-70),
         "@JoseMotril",
         font=brand_font,
-        fill=(255, 255, 255, 180)
+        fill=(255,255,255,180)
     )
 
     return img.convert("RGB")
 
 
-# =========================
+# ======================================
 # MAIN
-# =========================
+# ======================================
 
-historias = generar_contenido()
+def main():
 
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    historias = generar_contenido()
 
-for i, h in enumerate(historias):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    titulo = h["titulo"]
-    frase = h["frase"]
-    post = h["post"]
-    prompt_img = h["prompt_imagen"]
+    for i, h in enumerate(historias):
 
-    img = generar_imagen(prompt_img)
+        titulo = h["titulo"]
+        frase = h["frase"]
+        post = h["post"]
+        prompt_img = h["prompt_imagen"]
 
-    img = story_layout(img, titulo, frase)
+        img = generar_imagen(prompt_img)
 
-    img.save(f"stories/story_{timestamp}_{i}.png")
+        img = story_layout(img, titulo, frase)
 
-    with open(f"stories/story_{timestamp}_{i}.txt", "w", encoding="utf-8") as f:
-        f.write(post)
+        img.save(f"stories/story_{timestamp}_{i}.png")
 
-print("Historias PRO generadas correctamente")
+        with open(f"stories/story_{timestamp}_{i}.txt", "w", encoding="utf-8") as f:
+            f.write(post)
+
+    print("✅ Historias PRO generadas correctamente")
+
+
+if __name__ == "__main__":
+    main()
