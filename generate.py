@@ -103,21 +103,72 @@ def fonts():
 
 def layout_story(img, titulo, frase):
 
-    img = img.resize((W_STORY, H_STORY))
-    overlay = Image.new("RGBA", img.size, (0,0,0,180))
-    img = Image.alpha_composite(img, overlay)
+    img = img.resize((W_STORY, H_STORY)).convert("RGBA")
+
+    # ===== degradado suave inferior =====
+    gradient = Image.new("L", (1, H_STORY))
+    for y in range(H_STORY):
+        value = int(255 * (y / H_STORY) ** 2)
+        gradient.putpixel((0, y), value)
+
+    alpha = gradient.resize(img.size)
+
+    black = Image.new("RGBA", img.size, (0, 0, 0, 190))
+
+    img = Image.composite(black, img, alpha)
 
     draw = ImageDraw.Draw(img)
+
     f_title, f_sub, _ = fonts()
 
-    def center(text, font, y):
-        w = draw.textlength(text, font=font)
-        draw.text(((W_STORY-w)//2, y), text, font=font, fill="white")
+    # ===== tamaños más elegantes =====
+    f_title = ImageFont.truetype("DejaVuSans-Bold.ttf", 72)
+    f_sub = ImageFont.truetype("DejaVuSans.ttf", 44)
 
-    center(titulo.upper(), f_title, H_STORY*0.6)
-    center(frase, f_sub, H_STORY*0.6 + 140)
+    SAFE = 140
+
+    def wrap(text, font, max_width):
+        words = text.split()
+        lines = []
+        line = ""
+        for w in words:
+            test = line + w + " "
+            if draw.textlength(test, font=font) < max_width:
+                line = test
+            else:
+                lines.append(line)
+                line = w + " "
+        lines.append(line)
+        return lines
+
+
+    max_w = W_STORY - SAFE*2
+
+    title_lines = wrap(titulo.upper(), f_title, max_w)
+    sub_lines = wrap(frase, f_sub, max_w)
+
+    total_h = len(title_lines)*90 + len(sub_lines)*60
+
+    y = int(H_STORY*0.65 - total_h/2)
+
+    # ===== centrado perfecto =====
+    for l in title_lines:
+        w = draw.textlength(l, font=f_title)
+        draw.text(((W_STORY-w)//2, y), l, font=f_title, fill="white")
+        y += 90
+
+    y += 20
+
+    for l in sub_lines:
+        w = draw.textlength(l, font=f_sub)
+        draw.text(((W_STORY-w)//2, y), l, font=f_sub, fill=(235,235,235))
+        y += 60
+
+    # branding pequeño
+    draw.text((60, H_STORY-70), "@JoseMotril", fill=(255,255,255,170), font=f_sub)
 
     return img.convert("RGB")
+
 
 
 # =========================================
